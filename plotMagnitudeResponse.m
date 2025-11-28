@@ -19,6 +19,7 @@ function plotMagnitudeResponse(num, den, Fs)
     xlabel('Frequency (Hz)');
     ylabel('Magnitude (dB)');
     grid on;
-    %xlim([0, f_plot/2]);
+    xlim([0, Fs/2]);
 end
+
 
