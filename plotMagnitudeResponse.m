@@ -5,8 +5,8 @@ function plotMagnitudeResponse(num, den, Fs)
     num = num(:).';
     den = den(:).';
     
-    N_num = length(num);
-    N_den = length(den);
+    N_num = length(num) * 10;
+    N_den = length(den) * 10;
     
     % Calculate frequency response
     N_fft = max(4096, 2^nextpow2(4*max(N_num, N_den)));
