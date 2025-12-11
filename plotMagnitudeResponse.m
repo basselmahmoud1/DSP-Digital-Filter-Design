@@ -183,4 +183,216 @@ function plotMagnitudeResponse(num, den, N_fft, D, print_norm, Fs)
     sgtitle('Filter Response Analysis', 'FontSize', 12, 'FontWeight', 'bold');
 
 end
+=======
+function plotMagnitudeResponse(num, den, Fs)
+    % Ensure row vectors
+    num = num(:).';
+    den = den(:).';
 
+    % Calculate frequency response
+    N_fft = 8192;
+    [H, w] = freqz(num, den, N_fft, Fs);
+    f_plot = w;
+    % Calculate magnitude in dB
+    mag_dB = 20*log10(abs(H));
+
+    % Create figure
+    figure;
+    % Plot magnitude response
+    plot(f_plot, mag_dB, 'b', 'LineWidth', 2);
+    % Format plot
+    title('Magnitude Response');
+    xlabel('Frequency (Hz)');
+    ylabel('Magnitude (dB)');
+    grid on;
+    xlim([0, Fs/2]);
+end
+
+
+
+=======
+function plotMagnitudeResponse(num, den, N_fft, D, print_norm, Fs)
+    %% Magnitude and Phase response in frequency domain
+
+    % Ensure row vectors
+    num = num(:).';
+    den = den(:).';
+
+    if nargin < 4 || isempty(D)
+        D = 1000;
+    end
+
+    if nargin < 5 || isempty(print_norm)
+        print_norm = false;
+    end
+       
+    
+    if print_norm == false
+        % Calculate frequency response
+        [H, f_plot] = freqz(num, den, N_fft, Fs, 'whole');
+    
+        % Shift to center around DC (-Fs/2 to Fs/2)
+        H_shifted = fftshift(H);
+        f_shifted = f_plot - Fs / 2;
+    else
+        % Calculate frequency response
+        H = freqz(num, den, N_fft, Fs, 'whole');
+    
+        % Shift to center around DC (-Fs/2 to Fs/2)
+        H_shifted = fftshift(H);
+        f_shifted = linspace(-Fs / 2, Fs / 2, N_fft);
+    end
+
+    fund_freq = Fs / D;
+
+    idx = abs(f_shifted) <= fund_freq;
+    
+    % Calculate magnitude in dB
+    mag_dB = 20*log10(abs(H_shifted));
+    phase_rad = angle(H_shifted);  % Phase in radians (-π to π)
+    phase_deg = rad2deg(phase_rad); % Phase in degrees
+    
+    % Create single figure with 3x2 subplots
+    figure('Position', [100 100 1200 900], 'Name', 'Filter Analysis Dashboard');
+    
+    %% Subplot 1: Magnitude Response (top-left)
+    
+    subplot(3, 2, 1);
+
+    if print_norm == false
+        plot(f_shifted, mag_dB, 'b', 'LineWidth', 1.5);
+    else
+        plot(f_shifted(idx), mag_dB(idx), 'b', 'LineWidth', 1.5);
+    end
+
+    title('Magnitude Response');
+    xlabel('Frequency (Hz)');
+    ylabel('Magnitude (dB)');
+    grid on;
+
+    %% Subplot 2: Phase Response (top-right)
+    subplot(3, 2, 2);
+
+    if print_norm == false
+        plot(f_shifted, phase_deg, 'r', 'LineWidth', 1.5);
+    else
+        plot(f_shifted(idx), phase_deg(idx), 'r', 'LineWidth', 1.5);
+    end
+
+    title('Phase Response (Wrapped)');
+    xlabel('Frequency (Hz)');
+    ylabel('Phase (degrees)');
+    grid on;
+    ylim([-185, 185]);  % Slightly beyond ±180 for visibility
+
+    %% Subplot 3: Pole-Zero Plot (middle-left)
+    subplot(3, 2, 3);
+
+    % Use zplane() function to plot poles and zeros
+    [hz, hp] = zplane(num, den);
+
+    % Customize the appearance to match original style
+    hold on;
+
+    % Customize zero markers (blue filled circles)
+    set(hz, 'MarkerSize', 6, 'Color', 'b', 'LineWidth', 1);
+
+    % Customize pole markers (red crosses)
+    set(hp, 'MarkerSize', 6, 'Color', 'r', 'LineWidth', 1);
+
+    % Formatting
+    title('Pole-Zero Plot in Z-domain (using zplane)');
+    xlabel('Real Part');
+    ylabel('Imaginary Part');
+    grid on;
+    axis equal;
+    xlim([-1.2, 1.2]);
+    ylim([-1.2, 1.2]);
+
+    % Create legend with only the actual elements
+    legend_handles = [];
+    legend_labels = {};
+
+    % Add zeros to legend if they exist
+    legend_handles(end+1) = hz(1);  % Just use first handle
+    legend_labels{end+1} = 'Zeros (o)';
+
+    % Add poles to legend if they exist
+    legend_handles(end+1) = hp(1);  % Just use first handle
+    legend_labels{end+1} = 'Poles (x)';
+
+    % Create legend
+    legend(legend_handles, legend_labels, 'Location', 'best', 'FontSize', 8);
+
+    hold off;
+
+    %% Subplot 4: Group Delay (middle-right)
+    subplot(3, 2, 4);
+
+    % Calculate group delay
+    [gd, w] = grpdelay(num, den, N_fft, 'whole');
+
+    w_shifted = w - pi;
+
+    w_fund_normalized = pi * fund_freq / Fs;
+
+    w_idx = abs(w_shifted) <= w_fund_normalized;
+
+    % Normalize frequency axis by π
+    w_normalized = w_shifted / pi;
+
+    % Plot group delay
+    if print_norm == false
+        h1 = plot(w_normalized, gd, 'g', 'LineWidth', 1.5);
+    else
+        h1 = plot(w_normalized(w_idx), gd(w_idx), 'g', 'LineWidth', 1.5);
+    end
+
+    title('Group Delay Response');
+    xlabel('Normalized Frequency (×π rad/sample)');
+    ylabel('Group Delay (samples)');
+    grid on;
+
+    % Add legend and statistics
+    legend(h1, 'Group Delay', 'Location', 'best', 'FontSize', 8);
+
+    %% Subplot 5: Impulse Response (bottom-left, spanning 2 columns)
+    subplot(3, 2, [5, 6]);  % Span two columns
+
+    % Generate impulse response
+    impulse_length = max(2 * max(length(num), length(den)));
+    [h_impulse, n_impulse] = impz(num, den, impulse_length);
+
+    % Convert sample indices to time in seconds
+    t_impulse = n_impulse / Fs;
+
+    % Plot impulse response
+    stem(t_impulse, h_impulse, 'filled', 'b', 'MarkerSize', 4, 'LineWidth', 1);
+    title('Impulse Response');
+    xlabel('Time (seconds)');
+    ylabel('Amplitude');
+    grid on;
+
+    % Set appropriate x-axis limits
+    xlim([-0.5/Fs, (length(n_impulse)+0.5)/Fs]);
+
+    % Add statistics
+    max_amp = max(abs(h_impulse));
+    energy = sum(h_impulse.^2);
+    duration_seconds = (length(h_impulse)-1) / Fs;
+
+    stats_text = {sprintf('Duration: %.3f s', duration_seconds), ...
+                  sprintf('Samples: %d', length(h_impulse)), ...
+                  sprintf('Max Amplitude: %.4f', max_amp), ...
+                  sprintf('Energy: %.4f', energy)};
+
+    % Add text at top right corner of the graph
+    text(0.98, 0.98, stats_text, ...
+         'Units', 'normalized', 'FontSize', 8, ...
+         'BackgroundColor', 'w', 'Color', 'k', ...
+         'HorizontalAlignment', 'right', 'VerticalAlignment', 'top');
+
+    % Add tight layout for better spacing
+    sgtitle('Filter Response Analysis', 'FontSize', 12, 'FontWeight', 'bold');
+
+end
