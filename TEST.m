@@ -1,6 +1,7 @@
-clear all;
+clear;
 close all;
 clc;
+
 [xn,fs] = audioread('sample_audio_file.wav');
 
 % convert from stero to mono 
@@ -20,9 +21,9 @@ hn = zeros(1,3001);
 D = 1000 ;
 
 hn(1) = 1 ; 
-hn(1*D+1) = 0.9 ;
-hn(2*D+1) = 0.8 ;
-hn(3*D+1) = 0.7 ;
+hn(1*D + 1) = 0.9 ;
+hn(2*D + 1) = 0.8 ;
+hn(3*D + 1) = 0.7 ;
 
 % Numerator coefficients (b)
 b = hn;  % Length 3001 vector with non-zero values at positions [1, 1001, 2001, 3001]
@@ -30,4 +31,8 @@ b = hn;  % Length 3001 vector with non-zero values at positions [1, 1001, 2001, 
 % Denominator coefficients (a)
 a = 1;   % Single value 1 for FIR filter
 
-plotMagnitudeResponse(b, a, fs);
+N_DFT = length(hn) + N_xn;
+N_DFT =  2 ^ nextpow2(N_DFT); % 2^22
+
+plotMagnitudeResponse(b, a, N_DFT, D, true, fs);
+plotMagnitudeResponse(b, a, N_DFT, D, false, fs);
