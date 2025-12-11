@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 function plotMagnitudeResponse(num, den, Fs)
     % Ensure row vectors
     num = num(:).';
@@ -22,6 +21,7 @@ function plotMagnitudeResponse(num, den, Fs)
     grid on;
     xlim([0, Fs/2]);
 end
+
 
 
 =======
@@ -210,4 +210,3 @@ function plotMagnitudeResponse(num, den, N_fft, D, print_norm, Fs)
     sgtitle('Filter Response Analysis', 'FontSize', 12, 'FontWeight', 'bold');
 
 end
->>>>>>> Mustafa
